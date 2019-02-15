@@ -1,39 +1,76 @@
-from __future__ import print_function
+#!/usr/bin/env python
 import argparse
-import requests
 import json
+import logging
 import os
+import requests
 import sys
 import time
 
 parser = argparse.ArgumentParser()
 
-SF_API_URL = "https://api.signalfx.com/"
-SF_API_VERSION = "v2/"
+DEFAULT_API_URL='https://api.signalfx.com'
+DEFAULT_API_VERSION = 2
+
+parser.add_argument(
+    '--api_url',
+    type=str,
+    default=DEFAULT_API_URL,
+    help='Full URL to use for the API (default: {url})'.format(
+        url=DEFAULT_API_URL
+    )
+)
+parser.add_argument(
+    '--api_version',
+    type=int,
+    default=DEFAULT_API_VERSION,
+    help='API version (default: {version})'.format(
+        version=DEFAULT_API_VERSION
+    )
+)
+parser.add_argument(
+    '--config',
+    type=str,
+    required=True,
+    help='Path to configuration file'
+)
+parser.add_argument(
+    '--destination',
+    type=str,
+    required=True,
+    help='Directory to which backup files will be written'
+)
+parser.add_argument(
+    '--verbose',
+    help='Be verbose about what we doing',
+    action='store_true'
+)
+
+args = parser.parse_args()
+if args.verbose:
+    logging.basicConfig(level=logging.DEBUG)
+
 SF_DIMENSION_API_PATH = "dimension/"
 SF_DASHBOARDGROUP_API_PATH = "dashboardgroup/"
 
 SF_DASHBOARD_API_PATH = "dashboard/"
 SF_CHARTS_API_PATH = "chart/"
 
-SF_BACKUP_PATH = "backups/"
-
 if len(sys.argv) < 2:
-    print("Please specify a config file path!", file=sys.stderr)
+    logging.error("Please specify a config file path!")
     sys.exit(1)
 
-config_file = sys.argv[1]
 config = {}
 try:
-    with open(config_file, 'r') as cfile:
+    with open(os.path.expanduser(args.config), 'r') as cfile:
         config = json.load(cfile)
 except Exception, e:
-    print("Failed to load config file: {error}".format(error=str(e)), file=sys.stderr)
+    logging.error("Failed to load config file: %s", str(e))
     sys.exit(1)
 
 SF_TOKEN = config.get('token', None)
 if SF_TOKEN is None:
-    print("Config must provide a `token`!", file=sys.stderr)
+    logging.error("Config must provide a `token`!")
     sys.exit(1)
 
 def backup_thing(thing, thing_path):
@@ -42,41 +79,42 @@ def backup_thing(thing, thing_path):
         try:
             os.mkdir(thing_path)
         except Exception, e:
-            print(
-                "Could not create directory: {error}".format(error=str(e)), file=sys.stderr
-            )
+            logging.error("Could not create directory: %s", str(e))
             sys.exit(1)
-        print("Created {path}".format(path=thing_path))
+        logging.debug("Created %s", thing_path)
     target_file = thing_path + "/" + str(thing['lastUpdated']) + ".json"
     if os.path.exists(target_file):
-        print("{id} is unchanged".format(id=thing['id']))
+        logging.debug("%s is unchanged", thing['id'])
     else:
         try:
             with open(target_file, 'w') as out_file:
                 json.dump(thing, out_file)
         except Exception, e:
-            print(
-                "Could not create backup file: {error}".format(error=str(e)),
-                file=sys.stderr
+            logging.error(
+                "Could not create backup file: %s", str(e)
             )
             sys.exit(1)
 
-if not os.path.exists(SF_BACKUP_PATH):
-    print(
-        "Backup directory '{dir}' not found, create it?".format(dir=SF_BACKUP_PATH),
-        file=sys.stderr
+if not os.path.exists(args.destination):
+    logging.err(
+        "Backup directory '%s' not found, create it?", args.destination
     )
     sys.exit(1)
 
 get_headers = {'X-SF-TOKEN': SF_TOKEN}
 
-get_url = SF_API_URL + SF_API_VERSION + SF_DASHBOARDGROUP_API_PATH + '?limit=50'
-dashboard_get_url = SF_API_URL + SF_API_VERSION + SF_DASHBOARD_API_PATH
-chart_get_url = SF_API_URL + SF_API_VERSION + SF_CHARTS_API_PATH
+base_url = "{url}/v{version}/".format(
+    url=args.api_url,
+    version=str(args.api_version)
+)
+
+get_url = base_url + SF_DASHBOARDGROUP_API_PATH + '?limit=50'
+dashboard_get_url = base_url + SF_DASHBOARD_API_PATH
+chart_get_url = base_url + SF_CHARTS_API_PATH
 
 api_get = requests.get(get_url, headers=get_headers)
 number_of_dashboard_groups = json.loads(api_get.text)['count']
-print("Found {count} dashboard groups".format(count=str(number_of_dashboard_groups)))
+logging.debug("Found %d dashboard groups", number_of_dashboard_groups)
 
 # Retrieve all dashboard groups
 all_dashboard_groups = []
@@ -84,12 +122,12 @@ for i in range(0, (number_of_dashboard_groups/50)+1):
     iter_get_url = get_url+'&offset='+str(i*50)
     api_get = requests.get(iter_get_url, headers=get_headers)
     all_dashboard_groups += json.loads(api_get.text)['results']
-    print("Retrieved {count} dashboard groups".format(count=str(len(all_dashboard_groups))))
+    logging.debug("Retrieved %d dashboard groups", len(all_dashboard_groups))
 
 # Iterate through each dashboard group
 for dg in all_dashboard_groups:
     dg_id = dg['id']
-    dg_path = './' + SF_BACKUP_PATH + '/' + dg_id
+    dg_path = args.destination + '/' + dg_id
     # And write it out
     backup_thing(dg, dg_path)
     # Iterate through each dashboard in the group
