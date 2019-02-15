@@ -4,7 +4,22 @@ TKTK
 
 Usage
 ```
-backup.py configfilepath.json
+usage: backup.py [-h] [--api_url API_URL] [--api_version API_VERSION] --config
+                 CONFIG [--dashboards] --destination DESTINATION [--detectors]
+                 [--verbose]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --api_url API_URL     Full URL to use for the API (default:
+                        https://api.signalfx.com)
+  --api_version API_VERSION
+                        API version (default: 2)
+  --config CONFIG       Path to configuration file
+  --dashboards          Back up dashboards
+  --destination DESTINATION
+                        Directory to which backup files will be written
+  --detectors           Back up detectors
+  --verbose             Be verbose about what we doing
 ```
 
 Config file should contain:
