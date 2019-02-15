@@ -14,11 +14,18 @@ Config file should contain:
 }
 ```
 
+# TODO
+
+* Add pruning of definitions older than a timestamp
+* Add restoration of entity @ timestamp
+* Detectors
+* Docs
+
 # Storage
 
 ## Dashboard Groups, Dashboards and Charts
 
-Dashboards must be in Dashboard Groups, and Charts in Dashboards. To reflect that a directory structure like this is used (assumes a target directory of `backups`]):
+Dashboards must be in Dashboard Groups, and Charts in Dashboards. To reflect that a directory structure like this is used (assumes a target directory of `backups`):
 
 ```
 backups                   
