@@ -1,9 +1,12 @@
 from __future__ import print_function
+import argparse
 import requests
 import json
 import os
 import sys
 import time
+
+parser = argparse.ArgumentParser()
 
 SF_API_URL = "https://api.signalfx.com/"
 SF_API_VERSION = "v2/"
@@ -33,7 +36,7 @@ if SF_TOKEN is None:
     print("Config must provide a `token`!", file=sys.stderr)
     sys.exit(1)
 
-def backup_dashboard_group(thing, thing_path):
+def backup_thing(thing, thing_path):
 
     if not os.path.exists(thing_path):
         try:
@@ -88,7 +91,7 @@ for dg in all_dashboard_groups:
     dg_id = dg['id']
     dg_path = './' + SF_BACKUP_PATH + '/' + dg_id
     # And write it out
-    backup_dashboard_group(dg, dg_path)
+    backup_thing(dg, dg_path)
     # Iterate through each dashboard in the group
     for dash_id in dg['dashboards']:
         # Fetch the full dashboard
@@ -96,14 +99,13 @@ for dg in all_dashboard_groups:
         dash = json.loads(dash_resp.text)
         dash_path = dg_path + '/' + dash_id + '/'
         # And back that up
-        backup_dashboard_group(dash, dash_path)
+        backup_thing(dash, dash_path)
         # Iterate through each chart in the dashboard
         for chart_slot in dash['charts']:
             chart_id = chart_slot['chartId']
             # Fetch the full chart
             chart_resp = requests.get(chart_get_url + chart_id, headers=get_headers)
             chart = json.loads(chart_resp.text)
-            print(chart)
             chart_path = dash_path + '/' + chart_id + '/'
             # And back that up!
-            backup_dashboard_group(chart, chart_path)
+            backup_thing(chart, chart_path)
