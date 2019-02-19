@@ -138,14 +138,20 @@ def task_backup_detectors():
 
         logging.debug("Retrieved %d detectors", len(all_detectors))
 
-        for det_id in all_detectors:
+        for det in all_detectors:
+            # The V1 API is different, we'll have to refetch the asset
+            if '/v1/' in detector_get_url:
+                det_id = det
+                det_resp = requests.get(detector_get_url + det_id, headers=get_headers)
+                det = json.loads(det_resp.text)
+            else:
+                det_id = det['id']
+
             det_path = args.destination + '/' + det_id
-            det_resp = requests.get(detector_get_url + det_id, headers=get_headers)
-            det = json.loads(det_resp.text)
             if '/v2/' in detector_get_url:
                 # for v1 we need to take some fields to help our backup code
                 # work
-                pass
+                backup_thing(det, det_path, str(det['id']), str(det['lastUpdated']))
             else:
                 backup_thing(det, det_path, str(det['sf_id']), str(det['sf_updatedOnMs']))
 
