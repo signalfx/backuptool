@@ -37,6 +37,7 @@ Config file should contain:
 * Add pruning of definitions older than a timestamp
 * Add restoration of entity @ timestamp
 * Docs
+  * Strategies and such for v1 versus v2
 
 # Storage
 
