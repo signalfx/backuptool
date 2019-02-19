@@ -2,7 +2,8 @@
 
 TKTK
 
-Usage
+# Usage
+
 ```
 usage: backup.py [-h] [--api_url API_URL] [--api_version API_VERSION] --config
                  CONFIG [--dashboards] --destination DESTINATION [--detectors]
@@ -22,6 +23,8 @@ optional arguments:
   --verbose             Be verbose about what we doing
 ```
 
+# Configuration
+
 Config file should contain:
 ```
 {
@@ -33,7 +36,6 @@ Config file should contain:
 
 * Add pruning of definitions older than a timestamp
 * Add restoration of entity @ timestamp
-* Detectors
 * Docs
 
 # Storage

@@ -62,9 +62,9 @@ if args.verbose:
 
 SF_DIMENSION_API_PATH = "dimension/"
 SF_DASHBOARDGROUP_API_PATH = "dashboardgroup/"
-
 SF_DASHBOARD_API_PATH = "dashboard/"
 SF_CHARTS_API_PATH = "chart/"
+SF_DETECTOR_API_PATH = "detector/"
 
 config = {}
 try:
@@ -79,7 +79,7 @@ if SF_TOKEN is None:
     logging.error("Config must provide a `token`!")
     sys.exit(1)
 
-def backup_thing(thing, thing_path):
+def backup_thing(thing, thing_path, thing_id, thing_updated):
     if not os.path.exists(thing_path):
         try:
             os.mkdir(thing_path)
@@ -87,9 +87,9 @@ def backup_thing(thing, thing_path):
             logging.error("Could not create directory: %s", str(e))
             sys.exit(1)
         logging.debug("Created %s", thing_path)
-    target_file = thing_path + "/" + str(thing['lastUpdated']) + ".json"
+    target_file = thing_path + "/" + thing_updated + ".json"
     if os.path.exists(target_file):
-        logging.debug("%s is unchanged", thing['id'])
+        logging.debug("%s is unchanged", thing_id)
     else:
         try:
             with open(target_file, 'w') as out_file:
@@ -101,7 +101,7 @@ def backup_thing(thing, thing_path):
             sys.exit(1)
 
 if not os.path.exists(args.destination):
-    logging.err(
+    logging.error(
         "Backup directory '%s' not found, create it?", args.destination
     )
     sys.exit(1)
@@ -113,19 +113,51 @@ base_url = "{url}/v{version}/".format(
     version=str(args.api_version)
 )
 
-get_url = base_url + SF_DASHBOARDGROUP_API_PATH + '?limit=50'
+dashgroup_get_url = base_url + SF_DASHBOARDGROUP_API_PATH + '?limit=50'
 dashboard_get_url = base_url + SF_DASHBOARD_API_PATH
 chart_get_url = base_url + SF_CHARTS_API_PATH
+detector_list_get_url = base_url + SF_DETECTOR_API_PATH + '?limit=50'
+detector_get_url = base_url + SF_DETECTOR_API_PATH
+
+def task_backup_detectors():
+    api_get = requests.get(detector_list_get_url, headers=get_headers)
+    number_of_detectors = json.loads(api_get.text)['count']
+    print(api_get.text)
+    logging.debug("Found %d detectors", number_of_detectors)
+
+    all_detectors = []
+    for i in range(0, (number_of_detectors/50)+1):
+        iter_get_url = detector_list_get_url+'&offset='+str(i*50)
+        api_get = requests.get(iter_get_url, headers=get_headers)
+        print(api_get.text)
+
+        if "/v2/" in detector_get_url:
+            all_detectors += json.loads(api_get.text)['results']
+        else:
+            all_detectors += json.loads(api_get.text)['rs']
+
+        logging.debug("Retrieved %d detectors", len(all_detectors))
+
+        for det_id in all_detectors:
+            det_path = args.destination + '/' + det_id
+            det_resp = requests.get(detector_get_url + det_id, headers=get_headers)
+            det = json.loads(det_resp.text)
+            if '/v2/' in detector_get_url:
+                # for v1 we need to take some fields to help our backup code
+                # work
+                pass
+            else:
+                backup_thing(det, det_path, str(det['sf_id']), str(det['sf_updatedOnMs']))
 
 def task_backup_dashboards():
-    api_get = requests.get(get_url, headers=get_headers)
+    api_get = requests.get(dashgroup_get_url, headers=get_headers)
     number_of_dashboard_groups = json.loads(api_get.text)['count']
     logging.debug("Found %d dashboard groups", number_of_dashboard_groups)
 
     # Retrieve all dashboard groups
     all_dashboard_groups = []
     for i in range(0, (number_of_dashboard_groups/50)+1):
-        iter_get_url = get_url+'&offset='+str(i*50)
+        iter_get_url = dashgroup_get_url+'&offset='+str(i*50)
         api_get = requests.get(iter_get_url, headers=get_headers)
         all_dashboard_groups += json.loads(api_get.text)['results']
         logging.debug("Retrieved %d dashboard groups", len(all_dashboard_groups))
@@ -135,7 +167,7 @@ def task_backup_dashboards():
         dg_id = dg['id']
         dg_path = args.destination + '/' + dg_id
         # And write it out
-        backup_thing(dg, dg_path)
+        backup_thing(dg, dg_path, str(dg['id']), str(dg['lastUpdated']))
         # Iterate through each dashboard in the group
         for dash_id in dg['dashboards']:
             # Fetch the full dashboard
@@ -143,7 +175,7 @@ def task_backup_dashboards():
             dash = json.loads(dash_resp.text)
             dash_path = dg_path + '/' + dash_id + '/'
             # And back that up
-            backup_thing(dash, dash_path)
+            backup_thing(dash, dash_path, str(dash['id']), str(dash['lastUpdated']))
             # Iterate through each chart in the dashboard
             for chart_slot in dash['charts']:
                 chart_id = chart_slot['chartId']
@@ -152,7 +184,7 @@ def task_backup_dashboards():
                 chart = json.loads(chart_resp.text)
                 chart_path = dash_path + '/' + chart_id + '/'
                 # And back that up!
-                backup_thing(chart, chart_path)
+                backup_thing(chart, chart_path, str(chart['id']), str(chart['lastUpdated']))
 
 if __name__ == "__main__":
     if not args.dashboards and not args.detectors:
