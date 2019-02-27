@@ -29,7 +29,7 @@ optional arguments:
 
 # Configuration
 
-Config file should contain:
+This tool needs a SignalFx Access Token to function. You must provide a `--config` pointing to a JSON config file containing:
 ```
 {
   "token": "XXX"
