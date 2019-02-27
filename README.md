@@ -1,4 +1,4 @@
-# Backup Tool
+# SignalFx Backup Tool for Detectors and Dashboards
 
 This is a tool for backing up SignalFx dashboards and/or detectors. It is suitable for use with things like `cron`.
 
