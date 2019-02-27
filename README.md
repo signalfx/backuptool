@@ -1,6 +1,10 @@
 # Backup Tool
 
-TKTK
+This is a tool for backing up SignalFx dashboards and/or detectors. It is suitable for use with things like `cron`.
+
+You can choose one of `--dashboards` or `--detectors` and point the output do a specific `--destination` directory.
+
+**Note**: Be sure and point each invocation to a different directory, as this tool merely uses the asset's ID and has no awareness of types.
 
 # Usage
 
@@ -71,3 +75,15 @@ Each JSON file is a timestamp, containing the definition of the entity at that t
 ```
 
 As changes happen new JSON files will appear, containing the definition at that point in time.
+
+## Detectors
+
+Lacking any sort of grouping hierarchy, as a detector id directory that contains the definitions as timestamps.
+
+```
+backups
+├── Dzx2UBeAYAA
+│   └── 1550591993075.json
+└── DzyF3vbAcCw
+    └── 1550595879283.json
+```
