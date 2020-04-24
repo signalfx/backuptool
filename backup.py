@@ -70,7 +70,7 @@ config = {}
 try:
     with open(os.path.expanduser(args.config), 'r') as cfile:
         config = json.load(cfile)
-except Exception, e:
+except Exception as e:
     logging.error("Failed to load config file: %s", str(e))
     sys.exit(1)
 
@@ -83,7 +83,7 @@ def backup_thing(thing, thing_path, thing_id, thing_updated):
     if not os.path.exists(thing_path):
         try:
             os.mkdir(thing_path)
-        except Exception, e:
+        except Exception as e:
             logging.error("Could not create directory: %s", str(e))
             sys.exit(1)
         logging.debug("Created %s", thing_path)
@@ -94,7 +94,7 @@ def backup_thing(thing, thing_path, thing_id, thing_updated):
         try:
             with open(target_file, 'w') as out_file:
                 json.dump(thing, out_file)
-        except Exception, e:
+        except Exception as e:
             logging.error(
                 "Could not create backup file: %s", str(e)
             )
@@ -162,7 +162,7 @@ def task_backup_dashboards():
 
     # Retrieve all dashboard groups
     all_dashboard_groups = []
-    for i in range(0, (number_of_dashboard_groups/50)+1):
+    for i in range(0, int(number_of_dashboard_groups/50)+1):
         iter_get_url = dashgroup_get_url+'&offset='+str(i*50)
         api_get = requests.get(iter_get_url, headers=get_headers)
         all_dashboard_groups += json.loads(api_get.text)['results']
