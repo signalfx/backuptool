@@ -1,3 +1,5 @@
+>ℹ️&nbsp;&nbsp;SignalFx was acquired by Splunk in October 2019. See [Splunk SignalFx](https://www.splunk.com/en_us/investor-relations/acquisitions/signalfx.html) for more information.
+
 # SignalFx Backup Tool for Detectors and Dashboards
 
 This is a tool for backing up SignalFx dashboards and/or detectors. It is suitable for use with things like `cron`.
